@@ -18,9 +18,10 @@ header .sub{font-size:12px;color:#9AA7A1}
 #tabs button.on{background:var(--info);color:#06202E;border-color:var(--info);font-weight:600}
 main{display:grid;grid-template-columns:1fr 360px;min-height:0}
 @media (max-width:1200px){main{grid-template-columns:1fr 310px}}
-#centro{position:relative;background:#1B2225;display:flex;flex-direction:column;
+#centro{position:relative;background:#2B3539;display:flex;flex-direction:column;
   min-width:0;min-height:0;overflow:hidden}
-#vista{flex:1;min-height:0;position:relative}
+#vista{flex:1;min-height:0;position:relative;touch-action:none;
+  background:radial-gradient(ellipse 88% 78% at 50% 40%,#55646B 0%,#3C484D 45%,#2A3438 74%,#1E2529 100%)}
 #vista canvas{display:block;width:100%;height:100%}
 #rot{position:absolute;left:14px;top:12px;color:#CFE0D8;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 #rot b{display:block;font-size:16px}#rot span{font-size:11.5px;color:#9AB0A6}
@@ -59,6 +60,27 @@ main{display:grid;grid-template-columns:1fr 360px;min-height:0}
 .nota b{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:#8A6410;margin-bottom:3px}
 .nota.ok{background:#E6F7EF;border-left-color:var(--run)}
 .nota.ok b{color:#1E7A52}
+
+/* ---- pantalla de telefono: una sola columna y scroll ---- */
+@media (max-width:860px){
+  html,body{overflow:auto;height:auto}
+  #app{height:auto;min-height:100%}
+  header{padding:9px 12px;gap:7px}
+  header h1{font-size:15px;line-height:1.25}
+  header .sub{font-size:11px}
+  #tabs{margin-left:0;width:100%;gap:5px}
+  #tabs button{flex:1 1 0;padding:8px 6px;font-size:12px}
+  main{grid-template-columns:1fr}
+  #centro{height:auto}
+  #vista{flex:none;height:48vh;min-height:250px}
+  #osc{height:118px}
+  #mandos{padding:10px 12px;gap:9px 10px}
+  #mandos label{flex:1 1 100%}
+  #mandos input[type=range]{flex:1 1 auto;width:auto;min-width:100px}
+  #mandos button{flex:1 1 auto}
+  #der{border-left:0;border-top:1px solid var(--linea);overflow-y:visible;padding:12px}
+  #rot b{font-size:14px}#rot span{font-size:10.5px}
+}
 </style></head><body><div id="app">
 <header>
   <div><h1>COR-01 · Caudalímetro másico de Coriolis</h1>
@@ -99,12 +121,12 @@ const P = {};                       // piezas por id
 const MT = {
   inox:   new THREE.MeshStandardMaterial({ color: 0xBFC7CC, metalness: .85, roughness: .22 }),
   inox2:  new THREE.MeshStandardMaterial({ color: 0x8C959B, metalness: .8,  roughness: .34 }),
-  carcasa:new THREE.MeshStandardMaterial({ color: 0xA8B0B5, metalness: .7, roughness: .4,
+  carcasa:new THREE.MeshStandardMaterial({ color: 0x97A1A7, metalness: .35, roughness: .62,
                                            transparent: true, opacity: 1 }),
   azul:   new THREE.MeshStandardMaterial({ color: 0x2E6E9E, metalness: .4, roughness: .5 }),
   cobre:  new THREE.MeshStandardMaterial({ color: 0xB06A2C, metalness: .85, roughness: .3 }),
-  iman:   new THREE.MeshStandardMaterial({ color: 0x33393D, metalness: .7, roughness: .45 }),
-  negro:  new THREE.MeshStandardMaterial({ color: 0x2A3034, metalness: .4, roughness: .6 }),
+  iman:   new THREE.MeshStandardMaterial({ color: 0x454D52, metalness: .62, roughness: .45 }),
+  negro:  new THREE.MeshStandardMaterial({ color: 0x3C4449, metalness: .35, roughness: .62 }),
   rojo:   new THREE.MeshStandardMaterial({ color: 0xC24A2C, metalness: .3, roughness: .55 }),
   tapa:   new THREE.MeshStandardMaterial({ color: 0x6E767B, metalness: .75, roughness: .35 }),
   fluido: new THREE.MeshStandardMaterial({ color: 0x3DA8D8, metalness: .1, roughness: .25,
@@ -577,16 +599,39 @@ function cambiarVista(v) {
 /* --------------------------------- arranque -------------------------- */
 function iniciar() {
   const v = $("vista");
-  ren = new THREE.WebGLRenderer({ antialias: true });
+  ren = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   ren.setPixelRatio(Math.min(2, devicePixelRatio));
   ren.setSize(v.clientWidth, v.clientHeight);
-  ren.setClearColor(0x1B2225);
+  ren.setClearColor(0x000000, 0);   // el fondo lo pone el CSS de #vista
+  ren.outputEncoding = THREE.sRGBEncoding;
   v.appendChild(ren.domElement);
   esc = new THREE.Scene();
-  cam = new THREE.PerspectiveCamera(42, v.clientWidth / v.clientHeight, 0.1, 300);
-  const l1 = new THREE.DirectionalLight(0xffffff, 1.0); l1.position.set(5, 9, 7); esc.add(l1);
-  const l2 = new THREE.DirectionalLight(0xBBD4E0, 0.45); l2.position.set(-6, 3, -5); esc.add(l2);
-  esc.add(new THREE.AmbientLight(0xffffff, 0.5));
+  cam = new THREE.PerspectiveCamera(42, (v.clientWidth || 4) / (v.clientHeight || 3), 0.1, 300);
+  const l1 = new THREE.DirectionalLight(0xffffff, 0.62); l1.position.set(5, 9, 7); esc.add(l1);
+  const l2 = new THREE.DirectionalLight(0xBBD4E0, 0.28); l2.position.set(-6, 3, -5); esc.add(l2);
+  esc.add(new THREE.AmbientLight(0xffffff, 0.18));
+
+  /* Un material metálico de three.js no tiene color propio: refleja lo que
+     hay alrededor. Sin mapa de entorno refleja un mundo negro y sale negro
+     por mucha luz que se le ponga. Este degradado de estudio es ese mundo. */
+  (function entorno() {
+    const c = document.createElement("canvas"); c.width = 8; c.height = 64;
+    const x = c.getContext("2d");
+    const g = x.createLinearGradient(0, 0, 0, 64);
+    g.addColorStop(0.00, "#DCE4E8");
+    g.addColorStop(0.42, "#96A4AB");
+    g.addColorStop(0.50, "#6A757B");
+    g.addColorStop(0.58, "#454E53");
+    g.addColorStop(1.00, "#272D31");
+    x.fillStyle = g; x.fillRect(0, 0, 8, 64);
+    const tex = new THREE.CanvasTexture(c);
+    tex.mapping  = THREE.EquirectangularReflectionMapping;
+    tex.encoding = THREE.sRGBEncoding;
+    const pm = new THREE.PMREMGenerator(ren);
+    pm.compileEquirectangularShader();
+    esc.environment = pm.fromEquirectangular(tex).texture;
+    tex.dispose(); pm.dispose();
+  })();
 
   construir();
   encuadrar();
@@ -599,44 +644,72 @@ function iniciar() {
   octx = occ.getContext("2d"); ajustarOsc();
 
   let arr = false, px = 0, py = 0, giro = 0, alto = 0, radio = 0;
-  v.addEventListener("pointerdown", e => { arr = true; px = e.clientX; py = e.clientY; 
-    /* se parte del ángulo real de la cámara: así el giro no da un salto */
-    const f = cam.userData.foco;
-    if (f) {
-      const d = cam.position.clone().sub(f);
-      radio = d.length();
-      alto = Math.asin(Math.max(-1, Math.min(1, d.y / radio)));
-      giro = Math.atan2(d.x, d.z) - .55;
-    }
-  });
-  addEventListener("pointerup", () => arr = false);
-  addEventListener("pointermove", e => {
-    if (!arr || !cam.userData.foco || !radio) return;
-    giro -= (e.clientX - px) * 0.006; alto += (e.clientY - py) * 0.004;
-    alto = Math.max(-.3, Math.min(.85, alto));
-    px = e.clientX; py = e.clientY;
+  let tocado = false;               // ¿ya movió el aprendiz la cámara?
+  const dedos = new Map();          // pinza de dos dedos en pantalla táctil
+  let sepPrev = 0;
+  const separacion = () => {
+    const p = [...dedos.values()];
+    return Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+  };
+  /* se parte del ángulo real de la cámara: así el giro no da un salto */
+  const anclar = () => {
+    const f = cam.userData.foco; if (!f) return;
+    const d = cam.position.clone().sub(f);
+    radio = d.length();
+    alto = Math.asin(Math.max(-1, Math.min(1, d.y / radio)));
+    giro = Math.atan2(d.x, d.z) - .55;
+  };
+  const recolocar = () => {
     const f = cam.userData.foco;
     cam.position.set(f.x + radio * Math.cos(alto) * Math.sin(giro + .55),
                      f.y + radio * Math.sin(alto),
                      f.z + radio * Math.cos(alto) * Math.cos(giro + .55));
     cam.lookAt(f);
-  });
-
-  /* rueda del ratón: acercar y alejar sobre la misma dirección de vista */
-  v.addEventListener("wheel", e => {
+  };
+  /* acercar y alejar sobre la misma dirección de vista */
+  const acercar = factor => {
     const f = cam.userData.foco; if (!f) return;
-    e.preventDefault();
     const d = cam.position.clone().sub(f);
     if (!cam.userData.r0) cam.userData.r0 = d.length();
     const r0 = cam.userData.r0;
-    const nuevo = Math.max(r0 * 0.45, Math.min(r0 * 2.4, d.length() * Math.exp(e.deltaY * 0.0012)));
-    cam.position.copy(f).add(d.setLength(nuevo));
+    radio = Math.max(r0 * 0.45, Math.min(r0 * 2.4, d.length() * factor));
+    cam.position.copy(f).add(d.setLength(radio));
     cam.lookAt(f);
-    radio = nuevo;
+  };
+
+  v.addEventListener("pointerdown", e => {
+    dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dedos.size === 2) { arr = false; sepPrev = separacion(); return; }
+    arr = true; tocado = true; px = e.clientX; py = e.clientY; anclar();
+  });
+  const soltar = e => {
+    dedos.delete(e.pointerId);
+    if (dedos.size < 2) sepPrev = 0;
+    if (!dedos.size) arr = false;
+  };
+  addEventListener("pointerup", soltar);
+  addEventListener("pointercancel", soltar);
+  addEventListener("pointermove", e => {
+    if (dedos.has(e.pointerId)) dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dedos.size === 2) { const s = separacion();
+      if (sepPrev && s) acercar(sepPrev / s);
+      sepPrev = s; return; }
+    if (!arr || !cam.userData.foco || !radio) return;
+    giro -= (e.clientX - px) * 0.006; alto += (e.clientY - py) * 0.004;
+    alto = Math.max(-.3, Math.min(.85, alto));
+    px = e.clientX; py = e.clientY;
+    recolocar();
+  });
+
+  v.addEventListener("wheel", e => {
+    e.preventDefault(); tocado = true;
+    acercar(Math.exp(e.deltaY * 0.0012));
   }, { passive: false });
   addEventListener("resize", () => {
-    cam.aspect = v.clientWidth / v.clientHeight; cam.updateProjectionMatrix();
-    ren.setSize(v.clientWidth, v.clientHeight); ajustarOsc();
+    const an = v.clientWidth || 4, al = v.clientHeight || 3;
+    cam.aspect = an / al; cam.updateProjectionMatrix();
+    ren.setSize(an, al); ajustarOsc();
+    if (!tocado) { encuadrar(); delete cam.userData.r0; }
   });
   document.querySelectorAll("#tabs button").forEach(b =>
     b.onclick = () => cambiarVista(b.dataset.v));
@@ -645,6 +718,10 @@ function iniciar() {
   // en pantallas con escalado (125 %, 150 %) quedaba más alto que su caja.
   // Un reajuste en el siguiente cuadro lo deja exacto.
   requestAnimationFrame(() => dispatchEvent(new Event("resize")));
+  /* al girar el teléfono cambia tanto la proporción que reencuadrar
+     es más útil que conservar el ángulo en que estaba */
+  addEventListener("orientationchange", () =>
+    setTimeout(() => { tocado = false; dispatchEvent(new Event("resize")); }, 260));
 
   cambiarVista("principio");
 
